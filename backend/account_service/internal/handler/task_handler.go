@@ -1,7 +1,12 @@
 package handler
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/service"
+	"errors"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
+	"github.com/gorilla/mux"
 	"github.com/sarulabs/di"
 	"net/http"
 )
@@ -17,8 +22,24 @@ func NewTaskHandler(ctn di.Container) *TaskHandler {
 
 func (h *TaskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 
+	var taskCreationDto dto.TaskCreationDto
+
+	err := helpers.ReadJSONBody(r, &taskCreationDto)
+	if err != nil {
+		helpers.WriteJSONResponse(w, http.StatusBadRequest, dto.ErrorMsgResponse{err.Error()})
+		return
+	}
+
+	var accountId = mux.Vars(r)["account_id"]
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.CreateNewTask()
+
+	task, err := service.CreateNewTask(accountId, &taskCreationDto)
+	if err != nil{
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error() })
+	} else {
+		taskDto := dto.TaskDtoFromTask(task)
+		helpers.WriteJSONResponse(w, http.StatusOK, taskDto)
+	}
 }
 
 func (h *TaskHandler) UploadTaskDataHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,18 +57,65 @@ func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 func (h *TaskHandler) GetAllAccountTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.GetAllAccountTasks()
+
+	var accountId = mux.Vars(r)["account_id"]
+	tasks, err := service.GetAllAccountTasks(accountId)
+
+	if err != nil {
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+	} else {
+
+		taskDtos := dto.TaskDtoListFromTaskList(tasks)
+
+		if len(taskDtos) == 0 {
+			helpers.WriteJSONResponse(w, http.StatusNoContent, taskDtos)
+			return
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusOK, taskDtos)
+	}
 }
 
 func (h *TaskHandler) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.GetTaskInfo()
+
+	var taskId = mux.Vars(r)["task_id"]
+	task, err := service.GetTaskInfo(taskId)
+
+	if err != nil {
+
+		var appError *errors_helper.ApplicationError
+		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrTaskNotExists {
+			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
+			return
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+	} else {
+
+		taskDto := dto.TaskDtoFromTask(task)
+		helpers.WriteJSONResponse(w, http.StatusOK, taskDto)
+	}
 }
 
 func (h *TaskHandler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.DeleteTask()
+
+	var taskId = mux.Vars(r)["task_id"]
+	err := service.DeleteTask(taskId)
+
+	if err != nil {
+		var appError *errors_helper.ApplicationError
+		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrTaskNotExists {
+			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error() })
+			return
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error() })
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
 }
 

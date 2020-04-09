@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/model"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/service"
-	"github.com/RustamSafiulin/3d_reconstruction_service/common/helpers"
+	"errors"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
 	"github.com/gorilla/mux"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
@@ -23,18 +25,43 @@ func NewAccountHandler(ctn di.Container) *AccountHandler {
 func (h *AccountHandler) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
 	logrus.Info("CreateAccountHandler")
 
-	var signupInfo model.SignupInfoDto
+	var signupInfo dto.SignupInfoDto
 
 	err := json.NewDecoder(r.Body).Decode(&signupInfo)
 	if err != nil {
-		helpers.WriteJSONResponse(w, http.StatusBadRequest, model.ErrorMsgResponse{err.Error()})
+		helpers.WriteJSONResponse(w, http.StatusBadRequest, dto.ErrorMsgResponse{err.Error()})
 		return
 	}
 
 	accountService := h.ctn.Get("AccountService").(*service.AccountService)
-	err = accountService.Signup(&signupInfo)
-	switch err {
-	
+	createdAccount, err := accountService.Signup(&signupInfo)
+
+	if err != nil {
+		var appErr *errors_helper.ApplicationError
+
+		if errors.As(err, &appErr) {
+
+			logrus.Debugf("Reason: %s, Code: %d", appErr.Error(), appErr.Code())
+			errorCode := appErr.Code()
+
+			switch errorCode {
+			case errors_helper.ErrAccountAlreadyExists:
+				helpers.WriteJSONResponse(w, http.StatusConflict, dto.ErrorMsgResponse{err.Error()})
+				break
+			case errors_helper.ErrPasswordHashGeneration:
+			case errors_helper.ErrStorageError:
+			default:
+				helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+				break
+			}
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+
+	} else {
+
+		createdAccountDto := dto.AccountDtoFromAccount(createdAccount)
+		helpers.WriteJSONResponse(w, http.StatusOK, createdAccountDto)
 	}
 }
 
@@ -42,10 +69,23 @@ func (h *AccountHandler) GetAccountHandler(w http.ResponseWriter, r *http.Reques
 
 	var accountId = mux.Vars(r)["account_id"]
 	service := h.ctn.Get("AccountService").(*service.AccountService)
-	_, err := service.GetAccountInfo(accountId)
+	account, err := service.GetAccountInfo(accountId)
 
-	switch err {
+	if err != nil {
 
+		var appError *errors_helper.ApplicationError
+		if errors.As(err, &appError) {
+
+			if appError.Code() == errors_helper.ErrAccountNotExists {
+				helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
+			}
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+
+	} else {
+		accountDto := dto.AccountDtoFromAccount(account)
+		helpers.WriteJSONResponse(w, http.StatusOK, accountDto)
 	}
 }
 
@@ -53,19 +93,30 @@ func (h *AccountHandler) SigninHandler(w http.ResponseWriter, r *http.Request) {
 
 	logrus.Info("SigninHandler")
 
-	var loginInfo model.SigninInfoDto
+	var loginInfo dto.SigninInfoDto
 
 	err := json.NewDecoder(r.Body).Decode(&loginInfo)
 	if err != nil {
-		helpers.WriteJSONResponse(w, http.StatusBadRequest, model.ErrorMsgResponse{err.Error()})
+		helpers.WriteJSONResponse(w, http.StatusBadRequest, dto.ErrorMsgResponse{err.Error()})
 		return
 	}
 
 	service := h.ctn.Get("AccountService").(*service.AccountService)
-	err = service.Signin(&loginInfo)
+	sessionInfo, err := service.Signin(&loginInfo)
 
-	switch err {
+	if err != nil {
 
+		var appError *errors_helper.ApplicationError
+		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrWrongPassword {
+			helpers.WriteJSONResponse(w, http.StatusUnauthorized, dto.ErrorMsgResponse{err.Error()})
+			return
+		}
+
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+
+	} else {
+
+		helpers.WriteJSONResponse(w, http.StatusOK, sessionInfo)
 	}
 }
 
@@ -73,16 +124,6 @@ func (h *AccountHandler) UpdateAccountHandler(w http.ResponseWriter, r *http.Req
 
 	service := h.ctn.Get("AccountService").(*service.AccountService)
 	err := service.UpdateAccountInfo()
-
-	switch err {
-
-	}
-}
-
-func (h *AccountHandler) SignoutHandler(w http.ResponseWriter, r *http.Request) {
-
-	service := h.ctn.Get("AccountService").(*service.AccountService)
-	err := service.Signout()
 
 	switch err {
 

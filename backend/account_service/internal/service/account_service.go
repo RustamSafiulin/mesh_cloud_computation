@@ -1,10 +1,11 @@
 package service
 
 import (
-	"errors"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/model"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/storage"
-	"github.com/RustamSafiulin/3d_reconstruction_service/common/middleware"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/middleware"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
@@ -26,34 +27,44 @@ func PrepareAccountServiceDef(store storage.BaseAccountStorage) di.Def {
 	}
 }
 
-func (s *AccountService) Signup(si *model.SignupInfoDto) error {
-
-	logrus.Info("Signup")
+func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 
 	existingAcc, err := s.accountStorage.FindByEmail(si.Email)
+	if existingAcc != nil {
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountAlreadyExists, existingAcc.ID)
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(si.Password), 8)
 	if err != nil {
-		return nil
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrPasswordHashGeneration)
 	}
 
-	storedAccount := model.Account{Name: si.Username, Email: si.Email, PasswordHash: string(hashedPassword[:])}
+	storedAccount := model.Account{
+		ID: bson.NewObjectId(),
+		Name: si.Username,
+		Email: si.Email,
+		PasswordHash: string(hashedPassword[:]),
+		CreatedAt: time.Now().Unix(),
+	}
 	err = s.accountStorage.Insert(&storedAccount)
 
 	if err != nil {
-		return errors.New("")
+		logrus.Debug(err.Error())
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrStorageError, err.Error())
 	}
 
-	return nil
+	return &storedAccount, nil
 }
 
-func (s *AccountService) Signin(si *model.SigninInfoDto) (*model.SessionInfoDto, error) {
-	logrus.Info("Signin")
+func (s *AccountService) Signin(si *dto.SigninInfoDto) (*dto.SessionInfoDto, error) {
 
 	existingAccount, err := s.accountStorage.FindByEmail(si.Email)
+	if err != nil {
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountNotExists)
+	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(existingAccount.PasswordHash), []byte(si.Password)); err != nil {
-		return nil, ErrWrongPassword
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrWrongPassword)
 	}
 
 	expirationTime := time.Now().Add(24 * time.Hour)
@@ -68,30 +79,24 @@ func (s *AccountService) Signin(si *model.SigninInfoDto) (*model.SessionInfoDto,
 	tokenString, err := token.SignedString(middleware.JwtKey)
 
 	if err != nil {
-		return nil, ErrCreateJwtToken
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrCreateJwtToken)
 	}
 
-	storeSession := &model.SessionInfoDto{ AccountID: existingAccount.ID.String(), SessionToken: tokenString}
-
+	storeSession := &dto.SessionInfoDto{ AccountID: existingAccount.ID.Hex(), SessionToken: tokenString}
 	return storeSession, nil
 }
 
-func (s *AccountService) Signout() error {
-	logrus.Info("Signout")
-	return nil
-}
-
 func (s *AccountService) GetAccountInfo(accountId string) (*model.Account, error) {
-	logrus.Info("GetAccountInfo")
 
 	existingAccount, err := s.accountStorage.FindById(accountId)
-
+	if err != nil {
+		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountNotExists)
+	}
 
 	return existingAccount, nil
 }
 
 func (s *AccountService) UpdateAccountInfo() error {
-	logrus.Info("UpdateAccountInfo")
 	return nil
 }
 

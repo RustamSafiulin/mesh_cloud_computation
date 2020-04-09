@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/cmd"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/model"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/cmd"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"github.com/globalsign/mgo/bson"
 	"gopkg.in/mgo.v2"
 )
@@ -31,7 +31,7 @@ func (storage *TaskStorage) Insert(t *model.Task) error {
 	return storage.collection().Insert(t)
 }
 
-func (storage *TaskStorage) FindAll(accountId string) (*[]model.Task, error) {
+func (storage *TaskStorage) FindAll(accountId string) ([]model.Task, error) {
 
 	query := bson.M{
 		"account_id": bson.M{
@@ -39,8 +39,8 @@ func (storage *TaskStorage) FindAll(accountId string) (*[]model.Task, error) {
 		},
 	}
 
-	var tasks *[]model.Task
-	err := storage.collection().Find(query).All(tasks)
+	var tasks []model.Task
+	err := storage.collection().Find(query).All(&tasks)
 	return tasks, err
 }
 

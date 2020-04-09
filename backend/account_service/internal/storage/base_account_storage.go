@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/model"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 )
 
 type BaseAccountStorage interface {

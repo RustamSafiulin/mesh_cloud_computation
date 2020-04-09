@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/cmd"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/model"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/cmd"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -47,7 +47,7 @@ func (storage *AccountStorage) FindByEmail(email string) (*model.Account, error)
 		},
 	}
 
-	err := collection.Find(query).One(account)
+	err := collection.Find(query).One(&account)
 	return account, err
 }
 

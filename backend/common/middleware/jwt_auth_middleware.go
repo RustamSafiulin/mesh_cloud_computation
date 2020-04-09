@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"net/http"
 	"strings"
 
@@ -10,9 +11,6 @@ import (
 )
 
 var JwtKey = []byte("test_secret_key")
-
-// ErrParseAuthorizationHeader describes error when parse auth header
-var ErrParseAuthorizationHeader = errors.New("Error during parse authorization header")
 
 // JwtClaims for validation
 type JwtClaims struct {
@@ -25,7 +23,9 @@ func JwtTokenValidation(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 
 		tokenString, err := extractTokenFromRequest(req)
-		if err == ErrParseAuthorizationHeader {
+
+		var appErr *errors_helper.ApplicationError
+		if err != nil && errors.As(err, &appErr) && appErr.Code() == errors_helper.ErrParseAuthorizationHeader {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -43,6 +43,8 @@ func JwtTokenValidation(next http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
+		next(w, req)
 	})
 }
 
@@ -55,9 +57,9 @@ func extractTokenFromRequest(r *http.Request) (string, error) {
 		if len(bearerToken) == 2 {
 			return bearerToken[1], nil
 		} else {
-			return "", ErrParseAuthorizationHeader
+			return "", errors_helper.NewApplicationError(errors_helper.ErrParseAuthorizationHeader)
 		}
 	} else {
-		return "", ErrParseAuthorizationHeader
+		return "", errors_helper.NewApplicationError(errors_helper.ErrParseAuthorizationHeader)
 	}
 }

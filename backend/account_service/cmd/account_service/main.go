@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/cmd"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/handler"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/server"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/service"
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/storage"
-	"github.com/RustamSafiulin/3d_reconstruction_service/common/messaging"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/cmd"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/handler"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/server"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/mgo.v2"
@@ -18,7 +18,7 @@ import (
 func ConfigureMessaging(cfg *cmd.Config) *messaging.AmqpClient {
 
 	messageClient := &messaging.AmqpClient{}
-	messageClient.ConnectToBroker(cfg.AMQPUrl)
+	//messageClient.ConnectToBroker(cfg.AMQPUrl)
 	return messageClient
 }
 

@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 
-	"github.com/RustamSafiulin/3d_reconstruction_service/common/helpers"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
 )
 
 func PanicRecoveryMiddleware(h http.Handler) http.Handler {

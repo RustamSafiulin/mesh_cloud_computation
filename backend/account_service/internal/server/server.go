@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/RustamSafiulin/3d_reconstruction_service/account_service/internal/handler"
-	"github.com/RustamSafiulin/3d_reconstruction_service/common/middleware"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/handler"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/middleware"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -40,7 +40,6 @@ func (s *Server) SetupRoutes() {
 	api.HandleFunc("/accounts/{account_id}", middleware.JwtTokenValidation(s.ah.GetAccountHandler)).Methods("GET")
 	api.HandleFunc("/accounts/signin", s.ah.SigninHandler).Methods("POST")
 	api.HandleFunc("/accounts/{account_id}", middleware.JwtTokenValidation(s.ah.UpdateAccountHandler)).Methods("PUT")
-	api.HandleFunc("/accounts/signout", middleware.JwtTokenValidation(s.ah.SignoutHandler)).Methods("POST")
 	api.HandleFunc("/accounts/reset_password", middleware.JwtTokenValidation(s.ah.ResetPasswordHandler)).Methods("POST")
 	api.HandleFunc("/accounts/change_password", middleware.JwtTokenValidation(s.ah.ChangePasswordHandler)).Methods("POST")
 
