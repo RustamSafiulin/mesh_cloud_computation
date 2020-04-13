@@ -1,20 +1,21 @@
 package middleware
 
 import (
-	"errors"
 	"fmt"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
+	"github.com/pkg/errors"
 	"net/http"
 	"strings"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-var JwtKey = []byte("test_secret_key")
+var jwtKey = []byte("test_secret_key")
 
 // JwtClaims for validation
 type JwtClaims struct {
-	Username string
+	AccountID string
 	jwt.StandardClaims
 }
 
@@ -24,8 +25,7 @@ func JwtTokenValidation(next http.HandlerFunc) http.HandlerFunc {
 
 		tokenString, err := extractTokenFromRequest(req)
 
-		var appErr *errors_helper.ApplicationError
-		if err != nil && errors.As(err, &appErr) && appErr.Code() == errors_helper.ErrParseAuthorizationHeader {
+		if errors.Cause(err) == errors_helper.ErrParseAuthorizationHeader {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -36,7 +36,7 @@ func JwtTokenValidation(next http.HandlerFunc) http.HandlerFunc {
 				return nil, fmt.Errorf("Error during check access token")
 			}
 
-			return JwtKey, nil
+			return jwtKey, nil
 		})
 
 		if err != nil || !token.Valid {
@@ -44,22 +44,35 @@ func JwtTokenValidation(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		ctx := NewAccountIDContext(req.Context(), claims.AccountID)
+		req = req.WithContext(ctx)
+
 		next(w, req)
 	})
+}
+
+func CreateToken(accountID string) (string, error) {
+
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &JwtClaims{
+		AccountID: accountID,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+
+	return tokenString, err
 }
 
 func extractTokenFromRequest(r *http.Request) (string, error) {
 
 	authorizationHeader := r.Header.Get("Authorization")
-	if authorizationHeader != "" {
-		bearerToken := strings.Split(authorizationHeader, " ")
-
-		if len(bearerToken) == 2 {
-			return bearerToken[1], nil
-		} else {
-			return "", errors_helper.NewApplicationError(errors_helper.ErrParseAuthorizationHeader)
-		}
+	if authorizationHeader != "" && strings.HasPrefix(authorizationHeader, "Bearer_") {
+		return strings.TrimPrefix(authorizationHeader, "Bearer_"), nil
 	} else {
-		return "", errors_helper.NewApplicationError(errors_helper.ErrParseAuthorizationHeader)
+		return "", errors_helper.ErrParseAuthorizationHeader
 	}
 }

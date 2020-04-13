@@ -1,14 +1,14 @@
 package service
 
 import (
+	"fmt"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/middleware"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
 	"time"
@@ -31,12 +31,12 @@ func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 
 	existingAcc, err := s.accountStorage.FindByEmail(si.Email)
 	if existingAcc != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountAlreadyExists, existingAcc.ID)
+		return nil, errors.WithMessage(errors_helper.ErrAccountAlreadyExists, fmt.Sprintf("Account ID: %s, Reason: %s", existingAcc.ID, err.Error()))
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(si.Password), 8)
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrPasswordHashGeneration)
+		return nil, errors.WithMessage(errors_helper.ErrPasswordHashGeneration, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	storedAccount := model.Account{
@@ -49,8 +49,7 @@ func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 	err = s.accountStorage.Insert(&storedAccount)
 
 	if err != nil {
-		logrus.Debug(err.Error())
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrStorageError, err.Error())
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return &storedAccount, nil
@@ -60,26 +59,17 @@ func (s *AccountService) Signin(si *dto.SigninInfoDto) (*dto.SessionInfoDto, err
 
 	existingAccount, err := s.accountStorage.FindByEmail(si.Email)
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountNotExists)
+		return nil, errors.WithMessage(errors_helper.ErrAccountNotExists, fmt.Sprintf("Account email: %s, Reason: %s", si.Email, err.Error()))
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(existingAccount.PasswordHash), []byte(si.Password)); err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrWrongPassword)
+		return nil, errors.WithMessage(errors_helper.ErrWrongPassword, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
-	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &middleware.JwtClaims{
-		Username: existingAccount.ID.String(),
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(middleware.JwtKey)
+	tokenString, err := middleware.CreateToken(existingAccount.ID.Hex())
 
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrCreateJwtToken)
+		return nil, errors.WithMessage(errors_helper.ErrCreateJwtToken, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	storeSession := &dto.SessionInfoDto{ AccountID: existingAccount.ID.Hex(), SessionToken: tokenString}
@@ -90,7 +80,7 @@ func (s *AccountService) GetAccountInfo(accountId string) (*model.Account, error
 
 	existingAccount, err := s.accountStorage.FindById(accountId)
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrAccountNotExists)
+		return nil, errors.WithMessage(errors_helper.ErrAccountNotExists, fmt.Sprintf("Account ID: %s, reason: %s", accountId, err.Error()))
 	}
 
 	return existingAccount, nil

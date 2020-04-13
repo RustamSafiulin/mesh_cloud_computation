@@ -1,38 +1,21 @@
 package errors_helper
 
+import "github.com/pkg/errors"
+
 type ErrorCode uint
 
-const (
-	Success ErrorCode = iota
-	ErrCreateJwtToken
-	ErrParseAuthorizationHeader
-	ErrWrongPassword
-	ErrAccountNotExists
-	ErrAccountAlreadyExists
-	ErrTaskAlreadyExists
-	ErrTaskNotExists
-	ErrPasswordHashGeneration
-	ErrStorageError
+var (
+	ErrCreateJwtToken = errors.New("Error creation authorization token.")
+	ErrParseAuthorizationHeader = errors.New("Error during parse authorization header.")
+	ErrWrongPassword = errors.New("Wrong password.")
+	ErrAccountNotExists = errors.New("Account not found.")
+	ErrAccountAlreadyExists = errors.New("Account already exists.")
+	ErrTaskAlreadyExists = errors.New("Task already exists.")
+	ErrTaskNotExists = errors.New("Task not found.")
+	ErrPasswordHashGeneration = errors.New("Error during generate hash from password.")
+	ErrStorageError = errors.New("Storage error.")
+	ErrFileCreation = errors.New("File creation error.")
+	ErrParseFormFileHeader = errors.New("Form file header parse error.")
+	ErrWriteFile = errors.New("Write file error.")
+	ErrAccountIdNotFoundInContext = errors.New("Account ID not found in context.")
 )
-
-func (e ErrorCode) Ordinal() uint {
-	return uint(e)
-}
-
-type insertionString struct {
-	ErrorCode ErrorCode
-	msgString string
-}
-
-var insertionStrings = []insertionString{
-	{ ErrorCode: Success, msgString: "Success" },
-	{ ErrorCode: ErrCreateJwtToken, msgString: "Error creation authorization token" },
-	{ ErrorCode: ErrParseAuthorizationHeader, msgString: "Error during parse authorization header" },
-	{ ErrorCode: ErrWrongPassword, msgString: "Wrong password" },
-	{ ErrorCode: ErrAccountNotExists, msgString: "Account not found. ID: %v"},
-	{ ErrorCode: ErrTaskNotExists, msgString: "Task not found. ID: %v" },
-	{ ErrorCode: ErrAccountAlreadyExists, msgString: "Account already exists"},
-	{ ErrorCode: ErrTaskAlreadyExists, msgString: "Task already exists" },
-	{ ErrorCode: ErrPasswordHashGeneration, msgString: "Error during generate hash from password" },
-	{ ErrorCode: ErrStorageError, msgString: "Storage error. Reason: %v" },
-}

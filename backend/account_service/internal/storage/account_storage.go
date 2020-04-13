@@ -32,7 +32,7 @@ func (storage *AccountStorage) FindById(id string) (*model.Account, error) {
 		},
 	}
 
-	err := collection.Find(query).One(account)
+	err := collection.Find(query).One(&account)
 	return account, err
 }
 

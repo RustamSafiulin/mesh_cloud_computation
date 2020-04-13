@@ -23,7 +23,7 @@ func (storage *TaskStorage) collection() *mgo.Collection {
 
 func (storage *TaskStorage) FindById(id string) (*model.Task, error) {
 	var task *model.Task
-	err := storage.collection().FindId(bson.ObjectIdHex(id)).One(task)
+	err := storage.collection().FindId(bson.ObjectIdHex(id)).One(&task)
 	return task, err
 }
 

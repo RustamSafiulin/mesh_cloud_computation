@@ -1,15 +1,21 @@
 package service
 
 import (
+	"fmt"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging"
 	"github.com/globalsign/mgo"
+	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type TaskService struct {
@@ -34,14 +40,36 @@ func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskC
 	err := s.taskStorage.Insert(task)
 
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrStorageError)
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return task, err
 }
 
-func (s *TaskService) UploadTaskData() error {
+func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
 	logrus.Info("UploadTaskData")
+
+	r.ParseMultipartForm(32 << 20)
+	file, header, err := r.FormFile("task_data")
+	if err != nil {
+		return errors.WithMessage(errors_helper.ErrParseFormFileHeader, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	defer file.Close()
+
+	taskDataRelativePath := strings.Join([]string{"./uploads/", header.Filename, "_", taskId}, "")
+	taskDataAbsolutePath, _ := filepath.Abs(taskDataRelativePath)
+	f, err := os.Create(taskDataAbsolutePath)
+
+	if err != nil {
+		return errors.WithMessage(errors_helper.ErrFileCreation, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
+	}
+
+	defer f.Close()
+	if _, err := io.Copy(f, file); err != nil {
+		return errors.WithMessage(errors_helper.ErrWriteFile, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
+	}
+
 	return nil
 }
 
@@ -58,7 +86,7 @@ func (s *TaskService) GetAllAccountTasks(accountId string) ([]model.Task, error)
 
 	tasks, err := s.taskStorage.FindAll(accountId)
 	if err != nil {
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrStorageError)
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return tasks, err
@@ -71,10 +99,10 @@ func (s *TaskService) GetTaskInfo(id string) (*model.Task, error) {
 
 	if err != nil {
 		if err == mgo.ErrNotFound {
-			return nil, errors_helper.NewApplicationError(errors_helper.ErrTaskNotExists, id)
+			return nil, errors.WithMessage(errors_helper.ErrTaskNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", id, err.Error()))
 		}
 
-		return nil, errors_helper.NewApplicationError(errors_helper.ErrStorageError)
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return task, nil
@@ -87,10 +115,10 @@ func (s *TaskService) DeleteTask(id string) error {
 	if err != nil {
 
 		if err == mgo.ErrNotFound {
-			return errors_helper.NewApplicationError(errors_helper.ErrStorageError)
+			return errors.WithMessage(errors_helper.ErrTaskNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", id, err.Error()))
 		}
 
-		return errors_helper.NewApplicationError(errors_helper.ErrStorageError)
+		return errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return nil

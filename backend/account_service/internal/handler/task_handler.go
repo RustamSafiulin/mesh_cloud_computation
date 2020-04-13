@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"errors"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/middleware"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
 	"net/http"
 )
@@ -30,7 +31,12 @@ func (h *TaskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var accountId = mux.Vars(r)["account_id"]
+	accountId, ok := middleware.AccountIDFromContext(r.Context())
+	if !ok {
+		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{ errors_helper.ErrAccountIdNotFoundInContext.Error() })
+		return
+	}
+
 	service := h.ctn.Get("TaskService").(*service.TaskService)
 
 	task, err := service.CreateNewTask(accountId, &taskCreationDto)
@@ -45,7 +51,15 @@ func (h *TaskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 func (h *TaskHandler) UploadTaskDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.UploadTaskData()
+
+	var taskId = mux.Vars(r)["task_id"]
+	err := service.UploadTaskData(taskId, r)
+
+	if err != nil {
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +72,11 @@ func (h *TaskHandler) GetAllAccountTasksHandler(w http.ResponseWriter, r *http.R
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
 
-	var accountId = mux.Vars(r)["account_id"]
+	accountId, ok := middleware.AccountIDFromContext(r.Context())
+	if !ok {
+		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{ errors_helper.ErrAccountIdNotFoundInContext.Error() })
+	}
+
 	tasks, err := service.GetAllAccountTasks(accountId)
 
 	if err != nil {
@@ -85,8 +103,7 @@ func (h *TaskHandler) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 
-		var appError *errors_helper.ApplicationError
-		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrTaskNotExists {
+		if errors.Cause(err) == errors_helper.ErrTaskNotExists {
 			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
 			return
 		}
@@ -107,8 +124,8 @@ func (h *TaskHandler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) 
 	err := service.DeleteTask(taskId)
 
 	if err != nil {
-		var appError *errors_helper.ApplicationError
-		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrTaskNotExists {
+
+		if errors.Cause(err) == errors_helper.ErrTaskNotExists {
 			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error() })
 			return
 		}

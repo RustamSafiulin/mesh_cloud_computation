@@ -2,12 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -37,23 +37,22 @@ func (h *AccountHandler) CreateAccountHandler(w http.ResponseWriter, r *http.Req
 	createdAccount, err := accountService.Signup(&signupInfo)
 
 	if err != nil {
-		var appErr *errors_helper.ApplicationError
 
-		if errors.As(err, &appErr) {
+		logrus.Debugf("Error was caused. Reason: %s", err.Error())
 
-			logrus.Debugf("Reason: %s, Code: %d", appErr.Error(), appErr.Code())
-			errorCode := appErr.Code()
+		if errors.Cause(err) == errors_helper.ErrAccountAlreadyExists {
+			helpers.WriteJSONResponse(w, http.StatusConflict, dto.ErrorMsgResponse{err.Error()})
+			return
+		}
 
-			switch errorCode {
-			case errors_helper.ErrAccountAlreadyExists:
-				helpers.WriteJSONResponse(w, http.StatusConflict, dto.ErrorMsgResponse{err.Error()})
-				break
-			case errors_helper.ErrPasswordHashGeneration:
-			case errors_helper.ErrStorageError:
-			default:
-				helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
-				break
-			}
+		if errors.Cause(err) == errors_helper.ErrPasswordHashGeneration {
+			helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+			return
+		}
+
+		if errors.Cause(err) == errors_helper.ErrStorageError {
+			helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+			return
 		}
 
 		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
@@ -73,12 +72,9 @@ func (h *AccountHandler) GetAccountHandler(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 
-		var appError *errors_helper.ApplicationError
-		if errors.As(err, &appError) {
-
-			if appError.Code() == errors_helper.ErrAccountNotExists {
-				helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
-			}
+		if errors.Cause(err) == errors_helper.ErrAccountNotExists {
+			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
+			return
 		}
 
 		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
@@ -106,8 +102,7 @@ func (h *AccountHandler) SigninHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 
-		var appError *errors_helper.ApplicationError
-		if errors.As(err, &appError) && appError.Code() == errors_helper.ErrWrongPassword {
+		if errors.Cause(err) == errors_helper.ErrWrongPassword {
 			helpers.WriteJSONResponse(w, http.StatusUnauthorized, dto.ErrorMsgResponse{err.Error()})
 			return
 		}
