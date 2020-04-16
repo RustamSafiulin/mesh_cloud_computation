@@ -23,7 +23,6 @@ func NewAccountHandler(ctn di.Container) *AccountHandler {
 }
 
 func (h *AccountHandler) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
-	logrus.Info("CreateAccountHandler")
 
 	var signupInfo dto.SignupInfoDto
 
@@ -40,22 +39,17 @@ func (h *AccountHandler) CreateAccountHandler(w http.ResponseWriter, r *http.Req
 
 		logrus.Debugf("Error was caused. Reason: %s", err.Error())
 
-		if errors.Cause(err) == errors_helper.ErrAccountAlreadyExists {
-			helpers.WriteJSONResponse(w, http.StatusConflict, dto.ErrorMsgResponse{err.Error()})
-			return
+		var status int
+		switch errors.Cause(err) {
+		case errors_helper.ErrAccountAlreadyExists:
+			status = http.StatusConflict
+		case errors_helper.ErrPasswordHashGeneration:
+		case errors_helper.ErrStorageError:
+		default:
+			status = http.StatusInternalServerError
 		}
 
-		if errors.Cause(err) == errors_helper.ErrPasswordHashGeneration {
-			helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
-			return
-		}
-
-		if errors.Cause(err) == errors_helper.ErrStorageError {
-			helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
-			return
-		}
-
-		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+		helpers.WriteJSONResponse(w, status, dto.ErrorMsgResponse{err.Error()})
 
 	} else {
 
@@ -72,12 +66,18 @@ func (h *AccountHandler) GetAccountHandler(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 
-		if errors.Cause(err) == errors_helper.ErrAccountNotExists {
-			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
-			return
+		logrus.Debugf("Error was caused. Reason: %s", err.Error())
+
+		var status int
+
+		switch errors.Cause(err) {
+		case errors_helper.ErrAccountNotExists:
+			status = http.StatusNotFound
+		default:
+			status = http.StatusInternalServerError
 		}
 
-		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
+		helpers.WriteJSONResponse(w, status, dto.ErrorMsgResponse{err.Error() })
 
 	} else {
 		accountDto := dto.AccountDtoFromAccount(account)
@@ -86,8 +86,6 @@ func (h *AccountHandler) GetAccountHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *AccountHandler) SigninHandler(w http.ResponseWriter, r *http.Request) {
-
-	logrus.Info("SigninHandler")
 
 	var loginInfo dto.SigninInfoDto
 
@@ -102,15 +100,16 @@ func (h *AccountHandler) SigninHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 
-		if errors.Cause(err) == errors_helper.ErrWrongPassword {
-			helpers.WriteJSONResponse(w, http.StatusUnauthorized, dto.ErrorMsgResponse{err.Error()})
-			return
+		var status int
+		switch errors.Cause(err) {
+		case errors_helper.ErrWrongPassword:
+			status = http.StatusUnauthorized
+		default:
+			status = http.StatusInternalServerError
 		}
 
-		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
-
+		helpers.WriteJSONResponse(w, status, dto.ErrorMsgResponse{err.Error()})
 	} else {
-
 		helpers.WriteJSONResponse(w, http.StatusOK, sessionInfo)
 	}
 }

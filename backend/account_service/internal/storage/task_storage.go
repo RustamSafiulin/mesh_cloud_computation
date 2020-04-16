@@ -3,8 +3,8 @@ package storage
 import (
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/cmd"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
-	"github.com/globalsign/mgo/bson"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var tasksCollectionName = "tasks"
@@ -28,6 +28,7 @@ func (storage *TaskStorage) FindById(id string) (*model.Task, error) {
 }
 
 func (storage *TaskStorage) Insert(t *model.Task) error {
+	t.ID = bson.NewObjectId()
 	return storage.collection().Insert(t)
 }
 

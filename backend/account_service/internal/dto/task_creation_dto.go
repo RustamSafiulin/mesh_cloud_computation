@@ -13,7 +13,6 @@ type TaskCreationDto struct {
 
 func TaskCreationToTask(t *TaskCreationDto) *model.Task {
 	return &model.Task{
-		ID:          bson.NewObjectId(),
 		AccountID:   bson.ObjectIdHex(t.AccountID),
 		Description: t.Description,
 		CreatedAt:   time.Now().Unix(),
