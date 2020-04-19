@@ -10,12 +10,12 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type TaskService struct {
@@ -34,20 +34,17 @@ func PrepareTaskServiceDef(store storage.BaseTaskStorage, mqClient *messaging.Am
 }
 
 func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskCreationDto) (*model.Task, error) {
-	logrus.Info("Create new task")
 
-	task := dto.TaskCreationToTask(taskCreationDto)
-	err := s.taskStorage.Insert(task)
+	task, err := s.taskStorage.Insert(dto.TaskCreationToTask(taskCreationDto))
 
 	if err != nil {
-		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+		return task, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return task, err
 }
 
 func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
-	logrus.Info("UploadTaskData")
 
 	r.ParseMultipartForm(32 << 20)
 	file, header, err := r.FormFile("task_data")
@@ -57,7 +54,15 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
 
 	defer file.Close()
 
-	taskDataRelativePath := strings.Join([]string{"./uploads/", header.Filename, "_", taskId}, "")
+	uploadsDir := "./uploads/"
+	if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
+
+		if err = os.Mkdir(uploadsDir, os.ModePerm); err != nil {
+			return errors.WithMessage(errors_helper.ErrCreateDirectory, fmt.Sprintf("Directory path: %s, Reason: %s", uploadsDir, err.Error()))
+		}
+	}
+
+	taskDataRelativePath := strings.Join([]string{"./uploads/", taskId, "_", header.Filename}, "")
 	taskDataAbsolutePath, _ := filepath.Abs(taskDataRelativePath)
 	f, err := os.Create(taskDataAbsolutePath)
 
@@ -73,18 +78,32 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
 	return nil
 }
 
-func (s *TaskService) StartTask() error {
+func (s *TaskService) StartTask(taskId string) (*model.Task, error) {
 
-	logrus.Info("StartTask")
+	task, err := s.GetTaskInfo(taskId)
 
-	err := s.mqClient.PublishOnQueue([]byte{}, "task_queue")
-	return err
+	if err != nil {
+		return task, err
+	}
+
+	err = s.mqClient.PublishOnQueue([]byte(task.Description), "task_queue")
+	if err != nil {
+		return nil, errors.WithMessage(errors_helper.ErrStartComputationTask, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	task.State = model.StateRunning
+	task.StartedAt = time.Now().Unix()
+	err = s.taskStorage.Update(task)
+	if err != nil {
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	return task, err
 }
 
 func (s *TaskService) GetAllAccountTasks(accountId string) ([]model.Task, error) {
-	logrus.Info("GetAllAccountTasks")
 
-	tasks, err := s.taskStorage.FindAll(accountId)
+	tasks, err := s.taskStorage.FindAllByAccount(accountId)
 	if err != nil {
 		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
@@ -93,23 +112,21 @@ func (s *TaskService) GetAllAccountTasks(accountId string) ([]model.Task, error)
 }
 
 func (s *TaskService) GetTaskInfo(id string) (*model.Task, error) {
-	logrus.Info("GetTaskInfo")
 
 	task, err := s.taskStorage.FindById(id)
 
 	if err != nil {
 		if err == mgo.ErrNotFound {
-			return nil, errors.WithMessage(errors_helper.ErrTaskNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", id, err.Error()))
+			return task, errors.WithMessage(errors_helper.ErrTaskNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", id, err.Error()))
 		}
 
-		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+		return task, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	return task, nil
 }
 
 func (s *TaskService) DeleteTask(id string) error {
-	logrus.Info("DeleteTask")
 
 	err := s.taskStorage.Delete(id)
 	if err != nil {

@@ -27,12 +27,13 @@ func (storage *TaskStorage) FindById(id string) (*model.Task, error) {
 	return task, err
 }
 
-func (storage *TaskStorage) Insert(t *model.Task) error {
+func (storage *TaskStorage) Insert(t *model.Task) (*model.Task, error) {
 	t.ID = bson.NewObjectId()
-	return storage.collection().Insert(t)
+	err := storage.collection().Insert(t)
+	return t, err
 }
 
-func (storage *TaskStorage) FindAll(accountId string) ([]model.Task, error) {
+func (storage *TaskStorage) FindAllByAccount(accountId string) ([]model.Task, error) {
 
 	query := bson.M{
 		"account_id": bson.M{

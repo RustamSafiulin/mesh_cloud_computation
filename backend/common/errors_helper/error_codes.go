@@ -17,5 +17,7 @@ var (
 	ErrFileCreation = errors.New("File creation error.")
 	ErrParseFormFileHeader = errors.New("Form file header parse error.")
 	ErrWriteFile = errors.New("Write file error.")
+	ErrCreateDirectory = errors.New("Error was caused during directory creation.")
 	ErrAccountIdNotFoundInContext = errors.New("Account ID not found in context.")
+	ErrStartComputationTask = errors.New("Error was caused during start computation task.")
 )

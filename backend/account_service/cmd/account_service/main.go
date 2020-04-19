@@ -18,7 +18,7 @@ import (
 func ConfigureMessaging(cfg *cmd.Config) *messaging.AmqpClient {
 
 	messageClient := &messaging.AmqpClient{}
-	//messageClient.ConnectToBroker(cfg.AMQPUrl)
+	messageClient.ConnectToBroker(cfg.AMQPUrl)
 	return messageClient
 }
 

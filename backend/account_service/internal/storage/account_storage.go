@@ -51,8 +51,10 @@ func (storage *AccountStorage) FindByEmail(email string) (*model.Account, error)
 	return account, err
 }
 
-func (storage *AccountStorage) Insert(account *model.Account) error {
-	return storage.collection().Insert(account)
+func (storage *AccountStorage) Insert(account *model.Account) (*model.Account, error) {
+	account.ID = bson.NewObjectId()
+	err := storage.collection().Insert(account)
+	return account, err
 }
 
 func (storage *AccountStorage)Update(account *model.Account) error {

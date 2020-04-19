@@ -6,8 +6,8 @@ import (
 
 type BaseTaskStorage interface {
 	FindById(id string) (*model.Task, error)
-	Insert(t *model.Task) error
-	FindAll(accountId string) ([]model.Task, error)
+	Insert(t *model.Task) (*model.Task, error)
+	FindAllByAccount(accountId string) ([]model.Task, error)
 	Delete(id string) error
 	Update(t *model.Task) error
 }

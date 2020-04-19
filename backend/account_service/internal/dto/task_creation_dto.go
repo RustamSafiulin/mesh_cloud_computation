@@ -16,8 +16,6 @@ func TaskCreationToTask(t *TaskCreationDto) *model.Task {
 		AccountID:   bson.ObjectIdHex(t.AccountID),
 		Description: t.Description,
 		CreatedAt:   time.Now().Unix(),
-		StartedAt:   time.Now().Unix(),
-		CompletedAt: time.Now().Unix(),
 		State:       model.StateCreated,
 	}
 }

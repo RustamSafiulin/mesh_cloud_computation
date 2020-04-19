@@ -14,12 +14,12 @@ func (s *MockedTaskStorage) FindById(id string) (*model.Task, error)  {
 	return args.Get(0).(*model.Task), args.Error(1)
 }
 
-func (s *MockedTaskStorage) Insert(t *model.Task) error  {
+func (s *MockedTaskStorage) Insert(t *model.Task) (*model.Task, error)  {
 	args := s.Mock.Called(t)
-	return args.Error(0)
+	return args.Get(0).(*model.Task), args.Error(1)
 }
 
-func (s *MockedTaskStorage) FindAll(accountId string) ([]model.Task, error)  {
+func (s *MockedTaskStorage) FindAllByAccount(accountId string) ([]model.Task, error)  {
 	args := s.Mock.Called(accountId)
 	return args.Get(0).([]model.Task), args.Error(1)
 }

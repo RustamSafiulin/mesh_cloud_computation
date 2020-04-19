@@ -65,7 +65,16 @@ func (h *TaskHandler) UploadTaskDataHandler(w http.ResponseWriter, r *http.Reque
 func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
-	service.StartTask()
+
+	var taskId = mux.Vars(r)["task_id"]
+	updatedTask, err := service.StartTask(taskId)
+
+	if err != nil {
+
+	} else {
+		updatedTaskDto := dto.TaskDtoFromTask(updatedTask)
+		helpers.WriteJSONResponse(w, http.StatusOK, updatedTaskDto)
+	}
 }
 
 func (h *TaskHandler) GetAllAccountTasksHandler(w http.ResponseWriter, r *http.Request) {

@@ -39,20 +39,19 @@ func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 		return nil, errors.WithMessage(errors_helper.ErrPasswordHashGeneration, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
-	storedAccount := model.Account{
+	storedAccount, err := s.accountStorage.Insert(&model.Account{
 		ID: bson.NewObjectId(),
 		Name: si.Username,
 		Email: si.Email,
 		PasswordHash: string(hashedPassword[:]),
 		CreatedAt: time.Now().Unix(),
-	}
-	err = s.accountStorage.Insert(&storedAccount)
+	})
 
 	if err != nil {
 		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
-	return &storedAccount, nil
+	return storedAccount, nil
 }
 
 func (s *AccountService) Signin(si *dto.SigninInfoDto) (*dto.SessionInfoDto, error) {
@@ -80,7 +79,7 @@ func (s *AccountService) GetAccountInfo(accountId string) (*model.Account, error
 
 	existingAccount, err := s.accountStorage.FindById(accountId)
 	if err != nil {
-		return nil, errors.WithMessage(errors_helper.ErrAccountNotExists, fmt.Sprintf("Account ID: %s, reason: %s", accountId, err.Error()))
+		return existingAccount, errors.WithMessage(errors_helper.ErrAccountNotExists, fmt.Sprintf("Account ID: %s, reason: %s", accountId, err.Error()))
 	}
 
 	return existingAccount, nil
