@@ -10,4 +10,7 @@ type BaseTaskStorage interface {
 	FindAllByAccount(accountId string) ([]model.Task, error)
 	Delete(id string) error
 	Update(t *model.Task) error
+
+	InsertTaskFile(tf *model.TaskFile) (*model.TaskFile, error)
+	DeleteTaskFile(taskFileId string) error
 }

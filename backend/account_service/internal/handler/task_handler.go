@@ -53,12 +53,12 @@ func (h *TaskHandler) UploadTaskDataHandler(w http.ResponseWriter, r *http.Reque
 	service := h.ctn.Get("TaskService").(*service.TaskService)
 
 	var taskId = mux.Vars(r)["task_id"]
-	err := service.UploadTaskData(taskId, r)
+	taskFileInfo, err := service.UploadTaskData(taskId, r)
 
 	if err != nil {
 		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
 	} else {
-		w.WriteHeader(http.StatusOK)
+		helpers.WriteJSONResponse(w, http.StatusOK, dto.TaskFileDtoFromTaskFile(taskFileInfo))
 	}
 }
 

@@ -33,3 +33,13 @@ func (s *MockedTaskStorage) Update(t *model.Task) error {
 	args := s.Mock.Called(t)
 	return args.Error(0)
 }
+
+func (s *MockedTaskStorage) InsertTaskFile(tf *model.TaskFile) (*model.TaskFile, error) {
+	args := s.Mock.Called(tf)
+	return args.Get(0).(*model.TaskFile), args.Error(1)
+}
+
+func (s *MockedTaskStorage) DeleteTaskFile(taskFileId string) error {
+	args := s.Mock.Called(taskFileId)
+	return args.Error(0)
+}

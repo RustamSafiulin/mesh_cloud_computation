@@ -6,7 +6,7 @@ import (
 )
 
 type TaskDto struct {
-	ID 		    string `json:"task_id,omitempty"`
+	ID 		    string `json:"id,omitempty"`
 	AccountID   string `json:"account_id,omitempty"`
 	Description string `json:"description,omitempty"`
 	StartedAt   int64  `json:"started_at,omitempty"`

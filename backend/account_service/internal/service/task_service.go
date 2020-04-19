@@ -7,9 +7,10 @@ import (
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging"
-	"github.com/globalsign/mgo"
 	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 	"io"
 	"net/http"
 	"os"
@@ -44,12 +45,12 @@ func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskC
 	return task, err
 }
 
-func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
+func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.TaskFile, error) {
 
 	r.ParseMultipartForm(32 << 20)
 	file, header, err := r.FormFile("task_data")
 	if err != nil {
-		return errors.WithMessage(errors_helper.ErrParseFormFileHeader, fmt.Sprintf("Reason: %s", err.Error()))
+		return nil, errors.WithMessage(errors_helper.ErrParseFormFileHeader, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
 	defer file.Close()
@@ -58,24 +59,39 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) error {
 	if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
 
 		if err = os.Mkdir(uploadsDir, os.ModePerm); err != nil {
-			return errors.WithMessage(errors_helper.ErrCreateDirectory, fmt.Sprintf("Directory path: %s, Reason: %s", uploadsDir, err.Error()))
+			return nil, errors.WithMessage(errors_helper.ErrCreateDirectory, fmt.Sprintf("Directory path: %s, Reason: %s", uploadsDir, err.Error()))
 		}
 	}
 
+	pathTaskId := taskId
 	taskDataRelativePath := strings.Join([]string{"./uploads/", taskId, "_", header.Filename}, "")
 	taskDataAbsolutePath, _ := filepath.Abs(taskDataRelativePath)
 	f, err := os.Create(taskDataAbsolutePath)
 
 	if err != nil {
-		return errors.WithMessage(errors_helper.ErrFileCreation, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
+		return nil, errors.WithMessage(errors_helper.ErrFileCreation, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
 	}
 
 	defer f.Close()
 	if _, err := io.Copy(f, file); err != nil {
-		return errors.WithMessage(errors_helper.ErrWriteFile, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
+		return nil, errors.WithMessage(errors_helper.ErrWriteFile, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
 	}
 
-	return nil
+	taskFileInfo := &model.TaskFile{
+		TaskID:    bson.ObjectIdHex(pathTaskId),
+		Path:      taskDataAbsolutePath,
+		Name:      header.Filename,
+		Size:      header.Size,
+		MD5:       "",
+		CreatedAt: time.Now().Unix(),
+	}
+
+	taskFile, err := s.taskStorage.InsertTaskFile(taskFileInfo)
+	if err != nil {
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	return taskFile, nil
 }
 
 func (s *TaskService) StartTask(taskId string) (*model.Task, error) {

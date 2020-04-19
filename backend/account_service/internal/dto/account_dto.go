@@ -5,7 +5,7 @@ import (
 )
 
 type AccountDto struct {
-	AccountID string `json:"account_id,omitempty"`
+	AccountID string `json:"id,omitempty"`
 	Username  string `json:"username,omitempty"`
 	Email     string `json:"email,omitempty"`
 }
