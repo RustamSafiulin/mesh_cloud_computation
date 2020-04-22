@@ -51,7 +51,6 @@ func (m *AmqpClient) PublishOnQueue(body []byte, queueName string) error {
 			Body:        body, // Our JSON body as []byte
 		})
 
-	fmt.Printf("A message was sent to queue %v: %v", queueName, body)
 	return err
 }
 

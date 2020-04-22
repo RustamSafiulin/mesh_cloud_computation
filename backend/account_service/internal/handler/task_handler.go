@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -62,6 +63,16 @@ func (h *TaskHandler) UploadTaskDataHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+func (h *TaskHandler) DownloadTaskDataHandler(w http.ResponseWriter, r *http.Request) {
+
+	service := h.ctn.Get("TaskService").(*service.TaskService)
+
+	var taskId = mux.Vars(r)["task_id"]
+	var fileId = mux.Vars(r)["file_id"]
+
+	service.DownloadTaskData(taskId, fileId, w)
+}
+
 func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
@@ -70,7 +81,7 @@ func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	updatedTask, err := service.StartTask(taskId)
 
 	if err != nil {
-
+		logrus.Debugf("Error was caused when start task. Reason: %s", err.Error())
 	} else {
 		updatedTaskDto := dto.TaskDtoFromTask(updatedTask)
 		helpers.WriteJSONResponse(w, http.StatusOK, updatedTaskDto)

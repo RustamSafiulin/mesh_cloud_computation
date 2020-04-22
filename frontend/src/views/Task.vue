@@ -20,7 +20,7 @@
             <td>{{task.description}}</td>
             <td>{{task.state}}</td>
             <td>
-              <form enctype="multipart/form-data" @submit.prevent="onUploadTaskData(task.task_id)">
+              <form enctype="multipart/form-data" @submit.prevent="onUploadTaskData(task.id)">
                 <div class="fields">
                   <label>Upload file</label>
                   <input type="file" @change="onUploadFileSelect" />

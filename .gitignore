@@ -23,4 +23,7 @@
 /vendor/
 /Godeps/
 
+### User paths ###
+*/uploads/
+
 # End of https://www.gitignore.io/api/go

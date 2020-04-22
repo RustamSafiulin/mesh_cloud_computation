@@ -13,4 +13,5 @@ type BaseTaskStorage interface {
 
 	InsertTaskFile(tf *model.TaskFile) (*model.TaskFile, error)
 	DeleteTaskFile(taskFileId string) error
+	FindTaskFile(taskId string) (*model.TaskFile, error)
 }

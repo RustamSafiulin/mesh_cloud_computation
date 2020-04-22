@@ -58,6 +58,7 @@ func ConfigureServices(defs []di.Def) (di.Container, error) {
 
 func main() {
 
+	logrus.SetLevel(logrus.DebugLevel)
 	logrus.Info("Starting account_service")
 
 	config := cmd.DefaultConfiguration()

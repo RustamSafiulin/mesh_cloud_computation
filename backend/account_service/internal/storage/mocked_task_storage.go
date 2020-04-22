@@ -43,3 +43,8 @@ func (s *MockedTaskStorage) DeleteTaskFile(taskFileId string) error {
 	args := s.Mock.Called(taskFileId)
 	return args.Error(0)
 }
+
+func (s *MockedTaskStorage) FindTaskFile(taskId string) (*model.TaskFile, error) {
+	args := s.Mock.Called(taskId)
+	return args.Get(0).(*model.TaskFile), args.Error(1)
+}

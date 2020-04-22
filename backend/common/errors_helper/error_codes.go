@@ -20,4 +20,5 @@ var (
 	ErrCreateDirectory = errors.New("Error was caused during directory creation.")
 	ErrAccountIdNotFoundInContext = errors.New("Account ID not found in context.")
 	ErrStartComputationTask = errors.New("Error was caused during start computation task.")
+	ErrTaskDataFileNotExists = errors.New("Task data file not found.")
 )

@@ -1,14 +1,19 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging"
+	rpc_model "github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging/model"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/utils"
 	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"io"
@@ -29,9 +34,32 @@ func PrepareTaskServiceDef(store storage.BaseTaskStorage, mqClient *messaging.Am
 	return di.Def{
 		Name:  "TaskService",
 		Build: func(ctn di.Container) (i interface{}, e error) {
-			return &TaskService{client: &http.Client{}, taskStorage: store, mqClient: mqClient}, nil
+			return newTaskService(store, mqClient), nil
 		},
 	}
+}
+
+func newTaskService(store storage.BaseTaskStorage, mqClient *messaging.AmqpClient) *TaskService {
+
+	ts := &TaskService{client: &http.Client{}, taskStorage: store, mqClient: mqClient}
+	ts.createMessagingSubscriptions()
+	return ts
+}
+
+func (s *TaskService) createMessagingSubscriptions() {
+	s.mqClient.SubscribeToQueue(rpc_model.TasksResultQueueName, "account_service", s.onTaskCompletedHandler)
+}
+
+func (s *TaskService) onTaskCompletedHandler(delivery amqp.Delivery) {
+
+	taskResult := &rpc_model.TaskResultInfo{}
+	err := json.Unmarshal(delivery.Body, taskResult)
+	if err != nil {
+		logrus.Debugf("Error was caused during parse task result info from worker. Reason: %s", err.Error())
+		return
+	}
+
+	logrus.Debugf("Task result info: %s", taskResult.ToString())
 }
 
 func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskCreationDto) (*model.Task, error) {
@@ -45,6 +73,10 @@ func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskC
 	return task, err
 }
 
+func (s *TaskService) DownloadTaskData(taskId string, fileId string, w http.ResponseWriter) error {
+	return nil
+}
+
 func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.TaskFile, error) {
 
 	r.ParseMultipartForm(32 << 20)
@@ -55,7 +87,7 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.Tas
 
 	defer file.Close()
 
-	uploadsDir := "./uploads/"
+	uploadsDir := strings.Join([]string{"./uploads/", taskId}, "")
 	if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
 
 		if err = os.Mkdir(uploadsDir, os.ModePerm); err != nil {
@@ -63,8 +95,7 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.Tas
 		}
 	}
 
-	pathTaskId := taskId
-	taskDataRelativePath := strings.Join([]string{"./uploads/", taskId, "_", header.Filename}, "")
+	taskDataRelativePath := strings.Join([]string{uploadsDir, header.Filename}, "//")
 	taskDataAbsolutePath, _ := filepath.Abs(taskDataRelativePath)
 	f, err := os.Create(taskDataAbsolutePath)
 
@@ -77,12 +108,17 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.Tas
 		return nil, errors.WithMessage(errors_helper.ErrWriteFile, fmt.Sprintf("File path: %s, reason: %s", taskDataAbsolutePath, err.Error()))
 	}
 
+	md5hash, err := utils.CalculateMD5HashFormFile(file)
+	if err != nil {
+		logrus.Debugf("Something wrong when calculate md5 hash from file. Reason: %s", err.Error())
+	}
+
 	taskFileInfo := &model.TaskFile{
-		TaskID:    bson.ObjectIdHex(pathTaskId),
+		TaskID:    bson.ObjectIdHex(taskId),
 		Path:      taskDataAbsolutePath,
 		Name:      header.Filename,
 		Size:      header.Size,
-		MD5:       "",
+		MD5:       md5hash,
 		CreatedAt: time.Now().Unix(),
 	}
 
@@ -102,7 +138,26 @@ func (s *TaskService) StartTask(taskId string) (*model.Task, error) {
 		return task, err
 	}
 
-	err = s.mqClient.PublishOnQueue([]byte(task.Description), "task_queue")
+	tf, err := s.taskStorage.FindTaskFile(taskId)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return task, errors.WithMessage(errors_helper.ErrTaskDataFileNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", taskId, err.Error()))
+		}
+
+		return task, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	taskDataInfo := &rpc_model.TaskStartInfo{
+		FileID:        tf.ID.Hex(),
+		TaskID:        tf.TaskID.Hex(),
+		FileName:      tf.Name,
+		ServiceHostIP: "localhost",
+		ServicePort:   8081,
+	}
+
+	data, err := json.Marshal(taskDataInfo)
+
+	err = s.mqClient.PublishOnQueue(data, rpc_model.TasksStartQueueName)
 	if err != nil {
 		return nil, errors.WithMessage(errors_helper.ErrStartComputationTask, fmt.Sprintf("Reason: %s", err.Error()))
 	}

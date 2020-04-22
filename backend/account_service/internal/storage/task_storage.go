@@ -68,3 +68,16 @@ func (storage *TaskStorage) InsertTaskFile(tf *model.TaskFile) (*model.TaskFile,
 func (storage *TaskStorage) DeleteTaskFile(taskFileId string) error {
 	return storage.taskFilesCollection().RemoveId(bson.ObjectIdHex(taskFileId))
 }
+
+func (storage *TaskStorage) FindTaskFile(taskId string) (*model.TaskFile, error) {
+
+	query := bson.M{
+		"task_id": bson.M{
+			"$eq": bson.ObjectIdHex(taskId),
+		},
+	}
+
+	var tf model.TaskFile
+	err := storage.taskFilesCollection().Find(query).One(&tf)
+	return &tf, err
+}
