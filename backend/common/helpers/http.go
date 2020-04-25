@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/rs/cors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -42,4 +43,10 @@ func ReadBody(r *http.Request) ([]byte, error) {
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 
 	return body, nil
+}
+
+func EnableCors(h http.Handler) http.Handler {
+	c := cors.AllowAll()
+	corsHandler := c.Handler(h)
+	return corsHandler
 }

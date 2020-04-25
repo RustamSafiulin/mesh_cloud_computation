@@ -1,5 +1,7 @@
 package cmd
 
+var AppName = "job_service"
+
 type Config struct {
 	AMQPUrl    string `json:"amqp_url"`
 }

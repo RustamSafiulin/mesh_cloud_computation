@@ -15,6 +15,8 @@ import (
 	"syscall"
 )
 
+var appName = "account_service"
+
 func ConfigureMessaging(cfg *cmd.Config) *messaging.AmqpClient {
 
 	messageClient := &messaging.AmqpClient{}
@@ -59,7 +61,7 @@ func ConfigureServices(defs []di.Def) (di.Container, error) {
 func main() {
 
 	logrus.SetLevel(logrus.DebugLevel)
-	logrus.Info("Starting account_service")
+	logrus.Info("Starting " + appName + "...")
 
 	config := cmd.DefaultConfiguration()
 	mc := ConfigureMessaging(config)

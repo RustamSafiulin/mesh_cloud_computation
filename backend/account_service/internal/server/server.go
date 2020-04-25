@@ -2,9 +2,9 @@ package server
 
 import (
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/handler"
+	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/helpers"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/middleware"
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -25,9 +25,9 @@ func NewServer(ah *handler.AccountHandler, th *handler.TaskHandler) *Server {
 
 func (s *Server) Start() {
 
-	err := http.ListenAndServe(":8081", s.enableCors(s.r))
+	err := http.ListenAndServe(":8081", helpers.EnableCors(s.r))
 	if err != nil {
-		logrus.WithError(err).Fatal("Error during start Http server")
+		logrus.WithError(err).Fatal("Error during start Http server on port 8081")
 	}
 }
 
@@ -53,10 +53,4 @@ func (s *Server) SetupRoutes() {
 	api.HandleFunc("/tasks/{task_id}", middleware.JwtTokenValidation(s.th.DeleteTaskHandler)).Methods("DELETE")
 
 	s.r.PathPrefix("/").Handler(handler.IndexHandler("./public/dist"))
-}
-
-func (s *Server) enableCors(h http.Handler) http.Handler {
-	c := cors.AllowAll()
-	corsHandler := c.Handler(s.r)
-	return corsHandler
 }
