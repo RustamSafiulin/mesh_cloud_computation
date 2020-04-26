@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  account_service:
+    build: ./account_service
+    container_name: "account_service"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    volumes:
+      - ./data/account_service/uploads:/app/uploads
+  job_service:
+    build: ./job_service
+    container_name: "job_service"
+    ports:
+      - "8082:8082"
+    depends_on:
+      - rabbitmq
+  mongodb:
+    image: "mongo"
+    container_name: "mongodb"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME="rust"
+      - MONGO_INITDB_ROOT_PASSWORD="123"
+      - MONGO_INITDB_DATABASE=service_3d_db
+    ports:
+      - "27017-27019:27017-27019"
+    volumes:
+      - ./data/mongo-volume:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+  rabbitmq:
+    image: "rabbitmq:3.8.3-management"
+    container_name: "rabbitmq"
+    environment:
+      - "RABBITMQ_DEFAULT_USER=rust"
+      - "RABBITMQ_DEFAULT_PASS=123"
+      - "RABBITMQ_DEFAULT_VHOST=/"
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    volumes:
+      - ./data/rmq:/var/lib/rabbitmq
+      - ./data/rmq/logs:/var/log/rabbitmq

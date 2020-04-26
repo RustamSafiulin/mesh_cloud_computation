@@ -25,5 +25,8 @@
 
 ### User paths ###
 */uploads/
+/backend/data/
+/backend/account_service/bin/
+/backend/job_service/bin/
 
 # End of https://www.gitignore.io/api/go

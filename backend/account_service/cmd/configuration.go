@@ -9,12 +9,11 @@ type Config struct {
 
 func DefaultConfiguration() *Config {
 	return &Config{
-		MongoDBUrl:"mongodb://127.0.0.1",
-		AMQPUrl:"amqp://guest:guest@localhost:5672",
+		MongoDBUrl: "mongodb://rust:123@mongodb:27017/service_3d_db",
+		AMQPUrl:    "amqp://rust:123@rabbitmq/",
 	}
 }
 
 func ReadConfiguration(configFilePath string) *Config {
 	return &Config{}
 }
-
