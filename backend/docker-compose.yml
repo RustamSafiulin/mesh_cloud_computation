@@ -11,6 +11,9 @@ services:
       - rabbitmq
     volumes:
       - ./data/account_service/uploads:/app/uploads
+    links:
+      - rabbitmq
+    restart: on-failure
   job_service:
     build: ./job_service
     container_name: "job_service"
@@ -18,6 +21,9 @@ services:
       - "8082:8082"
     depends_on:
       - rabbitmq
+    links:
+      - rabbitmq
+    restart: on-failure
   mongodb:
     image: "mongo"
     container_name: "mongodb"
@@ -31,7 +37,7 @@ services:
       - ./data/mongo-volume:/data/db
       - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
   rabbitmq:
-    image: "rabbitmq:3.8.3-management"
+    build: ./rabbitmq
     container_name: "rabbitmq"
     environment:
       - "RABBITMQ_DEFAULT_USER=rust"
@@ -40,6 +46,14 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
+      - "4369:4369"
+      - "5671:5671"
+      - "15671:15671"
     volumes:
       - ./data/rmq:/var/lib/rabbitmq
       - ./data/rmq/logs:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

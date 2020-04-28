@@ -1,6 +1,11 @@
 package handler
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/service"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/errors_helper"
@@ -10,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sarulabs/di"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // TaskHandler handle task routes
@@ -34,15 +38,15 @@ func (h *TaskHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Request) 
 
 	accountId, ok := middleware.AccountIDFromContext(r.Context())
 	if !ok {
-		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{ errors_helper.ErrAccountIdNotFoundInContext.Error() })
+		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{errors_helper.ErrAccountIdNotFoundInContext.Error()})
 		return
 	}
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)
 
 	task, err := service.CreateNewTask(accountId, &taskCreationDto)
-	if err != nil{
-		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error() })
+	if err != nil {
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
 	} else {
 		taskDto := dto.TaskDtoFromTask(task)
 		helpers.WriteJSONResponse(w, http.StatusOK, taskDto)
@@ -68,9 +72,26 @@ func (h *TaskHandler) DownloadTaskDataHandler(w http.ResponseWriter, r *http.Req
 	service := h.ctn.Get("TaskService").(*service.TaskService)
 
 	var taskId = mux.Vars(r)["task_id"]
-	var fileId = mux.Vars(r)["file_id"]
 
-	service.DownloadTaskData(taskId, fileId, w)
+	tf, err := service.DownloadTaskData(taskId)
+	if err != nil {
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	} else {
+
+		fileHandle, err := os.Open(tf.Path)
+		if err != nil {
+			fullErr := errors.WithMessage(errors_helper.ErrFileCreation, fmt.Sprintf("Task ID: %s, Reason: %s", taskId, err.Error()))
+			helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{fullErr.Error()})
+			return
+		}
+		defer fileHandle.Close()
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", tf.Name))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", tf.Size))
+		io.Copy(w, fileHandle)
+	}
 }
 
 func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +115,7 @@ func (h *TaskHandler) GetAllAccountTasksHandler(w http.ResponseWriter, r *http.R
 
 	accountId, ok := middleware.AccountIDFromContext(r.Context())
 	if !ok {
-		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{ errors_helper.ErrAccountIdNotFoundInContext.Error() })
+		helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{errors_helper.ErrAccountIdNotFoundInContext.Error()})
 	}
 
 	tasks, err := service.GetAllAccountTasks(accountId)
@@ -146,13 +167,12 @@ func (h *TaskHandler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 
 		if errors.Cause(err) == errors_helper.ErrTaskNotExists {
-			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error() })
+			helpers.WriteJSONResponse(w, http.StatusNotFound, dto.ErrorMsgResponse{err.Error()})
 			return
 		}
 
-		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error() })
+		helpers.WriteJSONResponse(w, http.StatusInternalServerError, dto.ErrorMsgResponse{err.Error()})
 	} else {
 		w.WriteHeader(http.StatusOK)
 	}
 }
-

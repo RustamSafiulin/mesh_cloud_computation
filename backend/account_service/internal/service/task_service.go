@@ -3,6 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/dto"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/storage"
@@ -16,23 +23,17 @@ import (
 	"github.com/streadway/amqp"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 type TaskService struct {
 	client      *http.Client
 	taskStorage storage.BaseTaskStorage
-	mqClient	*messaging.AmqpClient
+	mqClient    *messaging.AmqpClient
 }
 
 func PrepareTaskServiceDef(store storage.BaseTaskStorage, mqClient *messaging.AmqpClient) di.Def {
 	return di.Def{
-		Name:  "TaskService",
+		Name: "TaskService",
 		Build: func(ctn di.Container) (i interface{}, e error) {
 			return newTaskService(store, mqClient), nil
 		},
@@ -73,8 +74,18 @@ func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskC
 	return task, err
 }
 
-func (s *TaskService) DownloadTaskData(taskId string, fileId string, w http.ResponseWriter) error {
-	return nil
+func (s *TaskService) DownloadTaskData(taskId string) (*model.TaskFile, error) {
+
+	tf, err := s.taskStorage.FindTaskFile(taskId)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return tf, errors.WithMessage(errors_helper.ErrTaskDataFileNotExists, fmt.Sprintf("Task ID: %s, Reason: %s", taskId, err.Error()))
+		}
+
+		return tf, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	return tf, err
 }
 
 func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.TaskFile, error) {
@@ -211,7 +222,3 @@ func (s *TaskService) DeleteTask(id string) error {
 
 	return nil
 }
-
-
-
-
