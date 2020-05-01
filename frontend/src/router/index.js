@@ -17,6 +17,12 @@ const routes = [
     component: () => import('../views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'register',
+    meta: {layout: 'empty', requiresAuth: false},
+    component: () => import('../views/Register.vue')
+  },
+  {
     path: '/tasks',
     name: 'task',
     meta: {layout: 'main', requiresAuth: true},

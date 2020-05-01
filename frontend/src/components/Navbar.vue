@@ -52,7 +52,7 @@ export default {
   },
   computed: {
     userName() {
-      return "test_user";
+      return this.$store.getters.userName;
     }
   },
   mounted() {

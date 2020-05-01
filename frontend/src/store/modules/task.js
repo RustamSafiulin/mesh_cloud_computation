@@ -13,6 +13,22 @@ export default {
         }
     },
     actions: {
+        async createTask({commit}, task) {
+            try {
+                const response = await axios.post(api_url, task)
+                const createdTask = response.data
+                return createdTask
+            } catch(e) {
+                throw new Error(e);
+            }
+        },
+        async deleteTask({commit}, id) {
+            try {
+                const response = axios.delete(api_url + `/${id}`)
+            } catch(e) {
+                throw new Error(e);
+            }
+        },
         async fetchTasks({commit}) {
             try {
                 

@@ -39,6 +39,10 @@
         </button>
         <small v-if="loginError" class="helper-text invalid">Неверный логин или пароль</small>
       </div>
+      <p class="center">
+        Нет учетной записи?
+        <router-link to="/register">Зарегистрироваться</router-link>
+      </p>
     </div>
   </form>
 </template>
