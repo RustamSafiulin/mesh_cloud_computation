@@ -49,6 +49,7 @@ func (s *Server) SetupRoutes() {
 	api.HandleFunc("/tasks/{task_id}/upload", middleware.JwtTokenValidation(s.th.UploadTaskDataHandler)).Methods("POST")
 	api.HandleFunc("/tasks/{task_id}/download", middleware.JwtTokenValidation(s.th.DownloadTaskDataHandler)).Methods("GET")
 	api.HandleFunc("/tasks/{task_id}/start", middleware.JwtTokenValidation(s.th.StartTaskHandler)).Methods("POST")
+	api.HandleFunc("/tasks/{task_id}/stop", middleware.JwtTokenValidation(s.th.StopTaskHandler)).Methods("POST")
 	api.HandleFunc("/tasks/{task_id}", middleware.JwtTokenValidation(s.th.GetTaskHandler)).Methods("GET")
 	api.HandleFunc("/tasks/{task_id}", middleware.JwtTokenValidation(s.th.DeleteTaskHandler)).Methods("DELETE")
 

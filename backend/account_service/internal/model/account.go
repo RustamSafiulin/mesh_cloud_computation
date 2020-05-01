@@ -9,7 +9,7 @@ type Account struct {
 	Name     	 string 	   `bson:"name,omitempty"`
 	Email    	 string 	   `bson:"email,omitempty"`
 	PasswordHash string        `bson:"password_hash,omitempty"`
-	CreatedAt    int64         `bson:"created_at,omitempty"`
+	CreatedAt    int64         `bson:"created_at"`
 }
 
 

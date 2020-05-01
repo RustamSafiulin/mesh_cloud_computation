@@ -11,6 +11,7 @@ import (
 	"github.com/sarulabs/di"
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
+	"strings"
 	"time"
 )
 
@@ -29,7 +30,7 @@ func PrepareAccountServiceDef(store storage.BaseAccountStorage) di.Def {
 
 func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 
-	existingAcc, err := s.accountStorage.FindByEmail(si.Email)
+	existingAcc, err := s.accountStorage.FindByEmail(strings.ToLower(si.Email))
 	if existingAcc != nil {
 		return nil, errors.WithMessage(errors_helper.ErrAccountAlreadyExists, fmt.Sprintf("Account ID: %s, Reason: %s", existingAcc.ID, err.Error()))
 	}
@@ -42,7 +43,7 @@ func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 	storedAccount, err := s.accountStorage.Insert(&model.Account{
 		ID: bson.NewObjectId(),
 		Name: si.Username,
-		Email: si.Email,
+		Email: strings.ToLower(si.Email),
 		PasswordHash: string(hashedPassword[:]),
 		CreatedAt: time.Now().Unix(),
 	})
@@ -56,7 +57,7 @@ func (s *AccountService) Signup(si *dto.SignupInfoDto) (*model.Account, error) {
 
 func (s *AccountService) Signin(si *dto.SigninInfoDto) (*dto.SessionInfoDto, error) {
 
-	existingAccount, err := s.accountStorage.FindByEmail(si.Email)
+	existingAccount, err := s.accountStorage.FindByEmail(strings.ToLower(si.Email))
 	if err != nil {
 		return nil, errors.WithMessage(errors_helper.ErrAccountNotExists, fmt.Sprintf("Account email: %s, Reason: %s", si.Email, err.Error()))
 	}
@@ -71,7 +72,7 @@ func (s *AccountService) Signin(si *dto.SigninInfoDto) (*dto.SessionInfoDto, err
 		return nil, errors.WithMessage(errors_helper.ErrCreateJwtToken, fmt.Sprintf("Reason: %s", err.Error()))
 	}
 
-	storeSession := &dto.SessionInfoDto{ AccountID: existingAccount.ID.Hex(), SessionToken: tokenString}
+	storeSession := &dto.SessionInfoDto{ AccountID: existingAccount.ID.Hex(), SessionToken: tokenString, UserName: existingAccount.Name, Email: strings.ToLower(existingAccount.Email) }
 	return storeSession, nil
 }
 

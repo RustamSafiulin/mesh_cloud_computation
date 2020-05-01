@@ -65,7 +65,9 @@ func (s *TaskService) onTaskCompletedHandler(delivery amqp.Delivery) {
 
 func (s *TaskService) CreateNewTask(accountId string, taskCreationDto *dto.TaskCreationDto) (*model.Task, error) {
 
-	task, err := s.taskStorage.Insert(dto.TaskCreationToTask(taskCreationDto))
+	taskInfo := dto.TaskCreationToTask(taskCreationDto)
+	taskInfo.AccountID = bson.ObjectIdHex(accountId)
+	task, err := s.taskStorage.Insert(taskInfo)
 
 	if err != nil {
 		return task, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
@@ -95,10 +97,17 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.Tas
 	if err != nil {
 		return nil, errors.WithMessage(errors_helper.ErrParseFormFileHeader, fmt.Sprintf("Reason: %s", err.Error()))
 	}
-
 	defer file.Close()
 
-	uploadsDir := strings.Join([]string{"./uploads/", taskId}, "")
+	rootUploadDir := "./uploads/"
+	if _, err := os.Stat(rootUploadDir); os.IsNotExist(err) {
+
+		if err = os.Mkdir(rootUploadDir, os.ModePerm); err != nil {
+			return nil, errors.WithMessage(errors_helper.ErrCreateDirectory, fmt.Sprintf("Directory path: %s, Reason: %s", rootUploadDir, err.Error()))
+		}
+	}
+
+	uploadsDir := strings.Join([]string{rootUploadDir, taskId}, "")
 	if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
 
 		if err = os.Mkdir(uploadsDir, os.ModePerm); err != nil {
@@ -139,6 +148,29 @@ func (s *TaskService) UploadTaskData(taskId string, r *http.Request) (*model.Tas
 	}
 
 	return taskFile, nil
+}
+
+func (s *TaskService) StopTask(taskId string) (*model.Task, error) {
+
+	task, err := s.GetTaskInfo(taskId)
+
+	if err != nil {
+		return task, err
+	}
+
+	/*
+	Need implement stop on rabbitmq
+	*/
+
+	task.State = model.StateCancelled
+	task.CompletedAt = time.Now().Unix()
+	err = s.taskStorage.Update(task)
+
+	if err != nil {
+		return nil, errors.WithMessage(errors_helper.ErrStorageError, fmt.Sprintf("Reason: %s", err.Error()))
+	}
+
+	return task, err
 }
 
 func (s *TaskService) StartTask(taskId string) (*model.Task, error) {

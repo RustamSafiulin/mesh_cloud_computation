@@ -6,7 +6,7 @@ type TaskFileDto struct {
 	ID        string `json:"id,omitempty"`
 	TaskID    string `json:"task_id,omitempty"`
 	Name      string `json:"name,omitempty"`
-	Size      int64  `json:"size,omitempty"`
+	Size      int64  `json:"size"`
 }
 
 func TaskFileDtoFromTaskFile(tf *model.TaskFile) *TaskFileDto {

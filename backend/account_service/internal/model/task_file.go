@@ -7,7 +7,7 @@ type TaskFile struct {
 	TaskID    bson.ObjectId `bson:"task_id,omitempty"`
 	Path      string        `bson:"path,omitempty"`
 	Name      string        `bson:"name,omitempty"`
-	Size      int64         `bson:"size,omitempty"`
+	Size      int64         `bson:"size"`
 	MD5	      string        `bson:"md5_hash,omitempty"`
-	CreatedAt int64			`bson:"created_at,omitempty"`
+	CreatedAt int64			`bson:"created_at"`
 }

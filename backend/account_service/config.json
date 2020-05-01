@@ -1,0 +1,4 @@
+{
+  "rabbitmq_url" : "amqp://rust:123@rabbitmq/",
+  "mongo_db_url" : "mongodb://rust:123@mongodb:27017/service_3d_db"
+}

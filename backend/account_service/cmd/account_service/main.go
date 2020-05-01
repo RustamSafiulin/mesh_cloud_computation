@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/cmd"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/handler"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/server"
@@ -15,7 +16,10 @@ import (
 	"syscall"
 )
 
-var appName = "account_service"
+var (
+	appName = "account_service"
+	configFilePathArg = flag.String("config_path", "config.json", "Configuration file path")
+)
 
 func ConfigureMessaging(cfg *cmd.Config) *messaging.AmqpClient {
 
@@ -60,10 +64,18 @@ func ConfigureServices(defs []di.Def) (di.Container, error) {
 
 func main() {
 
+	flag.Parse()
+
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.Info("Starting " + appName + "...")
 
-	config := cmd.DefaultConfiguration()
+	var config *cmd.Config
+	if *configFilePathArg == "" {
+		config = cmd.ReadConfiguration(*configFilePathArg)
+	} else {
+		config = cmd.DefaultConfiguration()
+	}
+
 	mc := ConfigureMessaging(config)
 	mgoSession := ConfigureMongoSession(config)
 

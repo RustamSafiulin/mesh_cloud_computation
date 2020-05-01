@@ -7,16 +7,32 @@ import (
 const (
 	StateCreated = 0
 	StateRunning = 1
-	StateStopped = 2
+	StateCompleted = 2
+	StateCancelled = 3
 )
 
+func GetStateStringFromState(state int) string {
+
+	if state == StateCreated {
+		return "Created"
+	} else if state == StateRunning {
+		return "Running"
+	} else if state == StateCompleted {
+		return "Completed"
+	} else if state == StateCancelled {
+		return "Cancelled"
+	}
+
+	return "Unknown"
+}
+
 type Task struct {
-	ID          bson.ObjectId `bson:"_id,omitempty"`
-	AccountID   bson.ObjectId `bson:"account_id,omitempty"`
-	Description string		  `bson:"description,omitempty"`
-	CreatedAt   int64         `bson:"created_at,omitempty"`
-	StartedAt   int64         `bson:"started_at,omitempty"`
-	CompletedAt int64 		  `bson:"completed_at,omitempty"`
-	State       int			  `bson:"state,omitempty"`
+	ID            bson.ObjectId `bson:"_id,omitempty"`
+	AccountID     bson.ObjectId `bson:"account_id,omitempty"`
+	Description   string		`bson:"description,omitempty"`
+	CreatedAt     int64         `bson:"created_at"`
+	StartedAt     int64         `bson:"started_at"`
+	CompletedAt   int64 		`bson:"completed_at"`
+	State         int			`bson:"state"`
 }
 

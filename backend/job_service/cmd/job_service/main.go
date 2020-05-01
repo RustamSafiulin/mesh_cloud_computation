@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/messaging"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/common/utils"
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/job_service/cmd"
@@ -11,7 +12,10 @@ import (
 	"syscall"
 )
 
-var appName = "job_service"
+var (
+	appName = "job_service"
+	configFilePathArg = flag.String("config_path", "config.json", "Configuration file path")
+)
 
 func ConfigureMessaging(cfg *cmd.Config)  *messaging.AmqpClient {
 	messagingClient := &messaging.AmqpClient{}
@@ -36,7 +40,14 @@ func main()  {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.Info("Starting " + cmd.AppName + "...")
 
-	cfg := cmd.DefaultConfiguration()
+	flag.Parse()
+
+	var cfg *cmd.Config
+	if *configFilePathArg == "" {
+		cfg = cmd.DefaultConfiguration()
+	} else {
+		cfg = cmd.ReadConfiguration(*configFilePathArg)
+	}
 
 	mc := ConfigureMessaging(cfg)
 	workerPool, _ := utils.NewWorkerPool(20)

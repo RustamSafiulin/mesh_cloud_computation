@@ -109,6 +109,21 @@ func (h *TaskHandler) StartTaskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *TaskHandler) StopTaskHandler(w http.ResponseWriter, r *http.Request) {
+
+	service := h.ctn.Get("TaskService").(*service.TaskService)
+
+	var taskId = mux.Vars(r)["task_id"]
+	updatedTask, err := service.StopTask(taskId)
+
+	if err != nil {
+		logrus.Debugf("Error was caused during stop task. Reason: %s", err.Error())
+	} else {
+		updatedTaskDto := dto.TaskDtoFromTask(updatedTask)
+		helpers.WriteJSONResponse(w, http.StatusOK, updatedTaskDto)
+	}
+}
+
 func (h *TaskHandler) GetAllAccountTasksHandler(w http.ResponseWriter, r *http.Request) {
 
 	service := h.ctn.Get("TaskService").(*service.TaskService)

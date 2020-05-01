@@ -2,20 +2,19 @@ package dto
 
 import (
 	"github.com/RustamSafiulin/mesh_cloud_computation/backend/account_service/internal/model"
-	"github.com/sirupsen/logrus"
 )
 
 type TaskDto struct {
 	ID 		    string `json:"id,omitempty"`
 	AccountID   string `json:"account_id,omitempty"`
 	Description string `json:"description,omitempty"`
-	StartedAt   int64  `json:"started_at,omitempty"`
-	CompletedAt int64  `json:"completed_at,omitempty"`
-	State       int    `json:"state,omitempty"`
+	StartedAt   int64  `json:"started_at"`
+	CompletedAt int64  `json:"completed_at"`
+	State       int    `json:"state"`
+	StateText   string `json:"state_text"`
 }
 
 func TaskDtoFromTask(task *model.Task) *TaskDto {
-	logrus.Debug(task.ID)
 
 	taskDto := &TaskDto{
 		ID:          task.ID.Hex(),
@@ -24,6 +23,7 @@ func TaskDtoFromTask(task *model.Task) *TaskDto {
 		StartedAt:   task.StartedAt,
 		CompletedAt: task.CompletedAt,
 		State:       task.State,
+		StateText:   model.GetStateStringFromState(task.State),
 	}
 
 	return taskDto
