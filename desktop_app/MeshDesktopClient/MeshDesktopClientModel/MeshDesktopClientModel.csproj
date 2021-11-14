@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{1DB87D5D-2126-441F-A724-BECD407E8EA0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MeshDesktopClient.Models</RootNamespace>
+    <AssemblyName>MeshDesktopClientModel</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="log4net, Version=2.0.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.13\lib\net45\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="RestSharp, Version=106.13.0.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.106.13.0\lib\net452\RestSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationEnvironment.cs" />
+    <Compile Include="Configuration.cs" />
+    <Compile Include="DefaultRegistryValues.cs" />
+    <Compile Include="DialogService.cs" />
+    <Compile Include="Dto\AuthRequestDto.cs" />
+    <Compile Include="Dto\AuthResponseDto.cs" />
+    <Compile Include="Dto\EmptyRequestDto.cs" />
+    <Compile Include="Dto\EmptyResponseDto.cs" />
+    <Compile Include="Dto\ErrorResponseDto.cs" />
+    <Compile Include="Dto\GenericPageResponseDto.cs" />
+    <Compile Include="Dto\TaskCreationDto.cs" />
+    <Compile Include="Dto\TaskDto.cs" />
+    <Compile Include="Dto\TaskFileDto.cs" />
+    <Compile Include="EventBus\AppExitEvent.cs" />
+    <Compile Include="EventBus\EventBus.cs" />
+    <Compile Include="EventBus\LoginEvent.cs" />
+    <Compile Include="Helpers\AsyncRelayCommand.cs" />
+    <Compile Include="Helpers\DateTimeHelpers.cs" />
+    <Compile Include="Helpers\DomainModelBase.cs" />
+    <Compile Include="Helpers\EditableObject.cs" />
+    <Compile Include="Helpers\EditableObservableCollection.cs" />
+    <Compile Include="Helpers\GenericAsyncRelayCommand.cs" />
+    <Compile Include="Helpers\GenericRelayCommand.cs" />
+    <Compile Include="Helpers\ImageGenerator.cs" />
+    <Compile Include="Helpers\ItemObservableCollection.cs" />
+    <Compile Include="Helpers\ITrackable.cs" />
+    <Compile Include="Helpers\JsonSerializer.cs" />
+    <Compile Include="Helpers\Logger.cs" />
+    <Compile Include="Helpers\Memento.cs" />
+    <Compile Include="Helpers\NotifyTaskCompletion.cs" />
+    <Compile Include="Helpers\NotifyTaskCompletionResult.cs" />
+    <Compile Include="Helpers\ObservableCollectionSortHelpers.cs" />
+    <Compile Include="Helpers\OnSortCommandParams.cs" />
+    <Compile Include="Helpers\RegistryHelpers.cs" />
+    <Compile Include="Helpers\RelayCommand.cs" />
+    <Compile Include="Helpers\SerializationHelpers.cs" />
+    <Compile Include="Helpers\UntrackedContext.cs" />
+    <Compile Include="IDialogService.cs" />
+    <Compile Include="Models\AppStoredParameters.cs" />
+    <Compile Include="Models\TaskFileModel.cs" />
+    <Compile Include="Models\TaskModel.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service\DownloadResponse.cs" />
+    <Compile Include="Service\OperationType.cs" />
+    <Compile Include="Service\Options.cs" />
+    <Compile Include="Service\Request.cs" />
+    <Compile Include="Service\Response.cs" />
+    <Compile Include="Service\Route.cs" />
+    <Compile Include="Service\ServiceConnector.cs" />
+    <Compile Include="Service\SessionStorage.cs" />
+    <Compile Include="ViewModels\ApplicationViewModel.cs" />
+    <Compile Include="ViewModels\ConfirmationDialogViewModel.cs" />
+    <Compile Include="ViewModels\EntryViewModel.cs" />
+    <Compile Include="ViewModels\InformationDialogViewModel.cs" />
+    <Compile Include="ViewModels\SettingsViewModel.cs" />
+    <Compile Include="ViewModels\TasksViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
