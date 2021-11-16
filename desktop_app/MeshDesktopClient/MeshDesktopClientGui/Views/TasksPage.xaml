@@ -33,10 +33,10 @@
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBox Width="450" Height="40" Style="{StaticResource PlaceHolder}" Tag="Новый расчет" 
-                                             Text="{Binding NewActivityDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                             Text="{Binding NewTaskDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
                 </Border>
-                <Button Command="{Binding AddActivityCommand}" Width="32" Height="32" Style="{StaticResource GridBtnStyle}">
+                <Button Command="{Binding CreateTaskCommand}" Width="32" Height="32" Style="{StaticResource GridBtnStyle}">
                     <StackPanel>
                         <Image Source ="{Binding Source={x:Static imgRes:Images.add_32}, Converter={StaticResource ImageResourceConverter} }"
                                                Stretch="Fill" Width="32" Height="32" ClipToBounds="False"/>
@@ -44,6 +44,7 @@
                 </Button>
             </StackPanel>
 
+            <!--
             <StackPanel Orientation="Horizontal" Margin="15,0,0,5">
                 <Label Content="ВСЕГО:" Foreground="#3d5257" FontSize="20px" FontFamily="Segoe UI Semibold" Height="40"/>
                 <Label Foreground="#00acb1" Content="{Binding TotalDurationFriendly, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
@@ -55,7 +56,7 @@
                                                Stretch="Fill" Width="16" Height="16" ClipToBounds="False" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Button>
-            </StackPanel>
+            </StackPanel> -->
             
         </StackPanel>
 
@@ -76,30 +77,24 @@
                   CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Binding="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="120" 
+                                    Width="200" 
                                     Header="Задача" 
                                     SortDirection="Descending"
                                     CanUserSort="True"
                                     IsReadOnly="True" />
 
-                <DataGridTextColumn Binding="{Binding Category, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="120"
-                                    Header="Категория"
-                                    CanUserSort="False"
-                                    IsReadOnly="True"/>
-
-                <DataGridTextColumn Binding="{Binding PlannedBeginTime, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, 
+                <DataGridTextColumn Binding="{Binding StartedAt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, 
                                              Converter={StaticResource ToFriendlyDateTimeConverter}}"
                                     Width="180"
-                                    Header="Плановое начало"
+                                    Header="Начало"
                                     CanUserSort="False"
                                     IsReadOnly="True"/>
 
-                <DataGridTextColumn Binding="{Binding DurationFriendly, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                    Width="150" 
-                                    Header="Продолжительность" 
-                                    CanUserSort="False" 
-                                    IsReadOnly="True" />
+                <DataGridTextColumn Binding="{Binding StateText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    Width="180"
+                                    Header="Состояние"
+                                    CanUserSort="False"
+                                    IsReadOnly="True"/>
 
                 <DataGridTemplateColumn CanUserSort="False" IsReadOnly="True" Header="Действия" Width="200">
                     <DataGridTemplateColumn.CellTemplate>
@@ -107,7 +102,7 @@
                             <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                                 <Button Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor,
                                                          AncestorType={x:Type Page}},
-                                                         Path=DataContext.DeleteActivityCommand}" Width="32" Height="32"
+                                                         Path=DataContext.DeleteTaskCommand}" Width="32" Height="32"
                                         Style="{StaticResource GridBtnStyle}">
                                     <StackPanel>
                                         <Image Source ="{Binding Source={x:Static imgRes:Images.delete_32}, Converter={StaticResource ImageResourceConverter} }"
@@ -116,7 +111,7 @@
                                 </Button>
                                 <Button Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor,
                                                          AncestorType={x:Type Page}},
-                                                         Path=DataContext.ViewActivityDetailsCommand}" Width="32" Height="32"
+                                                         Path=DataContext.ShowTaskInfoCommand}" Width="32" Height="32"
                                         Style="{StaticResource GridBtnStyle}">
                                     <StackPanel>
                                         <Image Source ="{Binding Source={x:Static imgRes:Images.details_32}, Converter={StaticResource ImageResourceConverter} }"

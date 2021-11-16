@@ -65,6 +65,7 @@ namespace MeshDesktopClient
                 Logger.Log.Debug("Register modal dialogs.");
                 mDialogService.RegisterDialog<ConfirmationDialogViewModel, ConfirmationDialog>();
                 mDialogService.RegisterDialog<InformationDialogViewModel, InformationDialog>();
+                mDialogService.RegisterDialog<TaskInformationViewModel, TaskInformationDialog>(mMainWindow, new List<object> { });
             }
             catch (Exception e)
             {

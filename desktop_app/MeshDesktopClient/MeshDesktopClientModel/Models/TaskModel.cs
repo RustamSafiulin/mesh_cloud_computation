@@ -15,6 +15,8 @@ namespace MeshDesktopClient.Models
 
         #region Props and fields
 
+        public readonly String InternalGuid = Guid.NewGuid().ToString();
+
         private String mId = String.Empty;
         public String Id
         {

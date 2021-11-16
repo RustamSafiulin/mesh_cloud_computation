@@ -111,6 +111,7 @@
     <Compile Include="ViewModels\EntryViewModel.cs" />
     <Compile Include="ViewModels\InformationDialogViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
+    <Compile Include="ViewModels\TaskInformationViewModel.cs" />
     <Compile Include="ViewModels\TasksViewModel.cs" />
   </ItemGroup>
   <ItemGroup />

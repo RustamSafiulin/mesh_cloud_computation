@@ -9,7 +9,7 @@ namespace MeshDesktopClient.Dto
     {
         #region Props and Fields
 
-        [JsonProperty(PropertyName = "email")]
+        [JsonProperty(PropertyName = "id")]
         public String Id { get; set; }
 
         [JsonProperty(PropertyName = "account_id")]
